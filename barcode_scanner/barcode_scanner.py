@@ -33,6 +33,8 @@ class BarcodeScanner(object):
         
         self.window = self.builder.get_object('window1')
         self.window.connect('destroy',self.quit)
+        self.video_image = self.builder.get_object('video_image')
+        
         self.zmq_entry = self.builder.get_object('zmq_entry')
         self.zmq_entry.set_text('tcp://localhost:31000')
         self.camera_entry = self.builder.get_object('camera_entry')
@@ -98,8 +100,24 @@ class BarcodeScanner(object):
         self.vc.release()
     
     def _scan_proc(self):
-        output = self.scan_once()
+        output, img = self.scan_once()
         result = {}
+        
+        pixbuf = gtk.gdk.pixbuf_new_from_data(img,
+                                              gtk.gdk.COLORSPACE_RGB,
+                                              has_alpha=False,
+                                              bits_per_sample=8,
+                                              width=1280,
+                                              height=1024,
+                                              rowstride=1280*3)
+        
+        self.video_image.set_from_pixbuf(
+            pixbuf.scale_simple(dest_width=1280/4,
+                                dest_height=1024/4,
+                                interp_type=gtk.gdk.INTERP_BILINEAR
+                                ).flip(True)
+        )
+        
         
         for i in output:
             symbol, data = i
@@ -120,7 +138,11 @@ class BarcodeScanner(object):
         return True
         
     def scan_once(self):
-        pil = Image.fromarray(self.vc.read()[1])
+        img_array = cv2.cvtColor( # Convert from BGR to RGB
+                                 self.vc.read()[1],
+                                 cv2.COLOR_BGR2RGB
+                                 )
+        pil = Image.fromarray(img_array)
         width, height = pil.size
         raw = pil.convert(mode='L').tobytes()
         
@@ -137,7 +159,7 @@ class BarcodeScanner(object):
             # do something useful with results
             output.append((symbol.type, symbol.data))
         
-        return output
+        return output, img_array
      
     @property
     def ids(self):

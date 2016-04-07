@@ -39,20 +39,6 @@
           </packing>
         </child>
         <child>
-          <object class="GtkScrolledWindow" id="video_window">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="hscrollbar_policy">automatic</property>
-            <property name="vscrollbar_policy">automatic</property>
-            <child>
-              <placeholder/>
-            </child>
-          </object>
-          <packing>
-            <property name="right_attach">2</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkLabel" id="label2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
@@ -180,6 +166,15 @@
             <property name="right_attach">2</property>
             <property name="top_attach">6</property>
             <property name="bottom_attach">7</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkImage" id="video_image">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="right_attach">2</property>
           </packing>
         </child>
       </object>
