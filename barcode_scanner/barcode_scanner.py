@@ -22,6 +22,11 @@ root_logger.addHandler(log_handler)
 
 logger = logging.getLogger("barcode_scanner.main")
 
+camera_width = 1280
+camera_height = 1024
+video_width = camera_width/4
+video_height = camera_height/4
+
 class BarcodeScanner(object):
     """Takes camera location as int and returns window."""
     def __init__(self, camera_location=0, standalone=True):
@@ -89,10 +94,10 @@ class BarcodeScanner(object):
         self.scanner.parse_config('code128.max=6')
         
         self.vc.open(0)
-        self.vc.set(3, 1280)
-        self.vc.set(4, 1024)
+        self.vc.set(3, camera_width)
+        self.vc.set(4, camera_height)
         
-        self.scan_proc_id = gobject.timeout_add(100, self._scan_proc)
+        self.scan_proc_id = gobject.timeout_add(200, self._scan_proc)
     
     def scan_stop(self):
         """Stops ongoing scan."""
@@ -107,13 +112,13 @@ class BarcodeScanner(object):
                                               gtk.gdk.COLORSPACE_RGB,
                                               has_alpha=False,
                                               bits_per_sample=8,
-                                              width=1280,
-                                              height=1024,
-                                              rowstride=1280*3)
+                                              width=camera_width,
+                                              height=camera_height,
+                                              rowstride=camera_width*3)
         
         self.video_image.set_from_pixbuf(
-            pixbuf.scale_simple(dest_width=1280/4,
-                                dest_height=1024/4,
+            pixbuf.scale_simple(dest_width=video_width,
+                                dest_height=video_height,
                                 interp_type=gtk.gdk.INTERP_BILINEAR
                                 ).flip(True)
         )
