@@ -151,9 +151,9 @@ class BarcodeScanner(object):
 
         # scan the image for barcodes
         self.scanner.scan(image)
-        
+
         output = []
-        
+
         # extract results
         for symbol in image:
             # do something useful with results
@@ -181,43 +181,3 @@ class BarcodeScanner(object):
 if __name__ == '__main__':
     MAIN = BarcodeScanner()
     gtk.main()
-        
-
-# vc = cv2.VideoCapture()
-# # create a reader
-# scanner = zbar.ImageScanner()
-#
-# # configure the reader
-# scanner.parse_config('enable=0')
-# scanner.parse_config('qrcode.enable=1')
-# scanner.parse_config('code128.enable=1')
-# scanner.parse_config('code128.ascii=0')
-# scanner.parse_config('code128.min=6')
-# scanner.parse_config('code128.max=6')
-#
-# vc.open(0)
-# vc.set(3, 1280)
-# vc.set(4, 1024)
-#
-# while True:
-#     pil = Image.fromarray(vc.read()[1])
-#     width, height = pil.size
-#     raw = pil.convert(mode='L').tobytes()
-#     decoded = False
-#     # wrap image data
-#     image = zbar.Image(width, height, 'Y800', raw)
-#
-#     # scan the image for barcodes
-#     scanner.scan(image)
-#
-#     # extract results
-#     for symbol in image:
-#         # do something useful with results
-#         print 'decoded', symbol.type, 'symbol', '"%s"' % symbol.data
-#         decoded = True
-#     if decoded:
-#         pil.show()
-#         break
-#
-#
-# vc.release()
