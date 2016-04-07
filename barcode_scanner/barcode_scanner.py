@@ -97,7 +97,7 @@ class BarcodeScanner(object):
         self.vc.set(3, camera_width)
         self.vc.set(4, camera_height)
         
-        self.scan_proc_id = gobject.timeout_add(200, self._scan_proc)
+        self.scan_proc_id = gobject.timeout_add(150, self._scan_proc)
     
     def scan_stop(self):
         """Stops ongoing scan."""
