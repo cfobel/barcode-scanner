@@ -133,7 +133,6 @@
             <property name="receives_default">True</property>
           </object>
           <packing>
-            <property name="right_attach">2</property>
             <property name="top_attach">5</property>
             <property name="bottom_attach">6</property>
           </packing>
@@ -175,6 +174,19 @@
           </object>
           <packing>
             <property name="right_attach">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkImage" id="status_image">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="stock">gtk-no</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="right_attach">2</property>
+            <property name="top_attach">5</property>
+            <property name="bottom_attach">6</property>
           </packing>
         </child>
       </object>

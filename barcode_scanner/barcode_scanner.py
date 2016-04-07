@@ -39,6 +39,7 @@ class BarcodeScanner(object):
         self.window = self.builder.get_object('window1')
         self.window.connect('destroy',self.quit)
         self.video_image = self.builder.get_object('video_image')
+        self.status_image = self.builder.get_object('status_image')
         
         self.zmq_entry = self.builder.get_object('zmq_entry')
         self.zmq_entry.set_text('tcp://localhost:31000')
@@ -130,6 +131,10 @@ class BarcodeScanner(object):
             symbol = str(symbol)
             data = str(data)
             
+            self.status_image.set_from_stock(gtk.STOCK_YES,
+                                             gtk.ICON_SIZE_BUTTON)
+            gobject.timeout_add(1000, self._status_icon_reset)
+            
             if symbol == 'CODE128':
                 result['pid_entry'] = data
             elif symbol == 'QRCODE':
@@ -141,7 +146,7 @@ class BarcodeScanner(object):
         
         self.ids = result
         return True
-        
+      
     def scan_once(self):
         img_array = cv2.cvtColor( # Convert from BGR to RGB
                                  self.vc.read()[1],
@@ -161,10 +166,13 @@ class BarcodeScanner(object):
 
         # extract results
         for symbol in image:
-            # do something useful with results
             output.append((symbol.type, symbol.data))
         
         return output, img_array
+    
+    def _status_icon_reset(self):
+        self.status_image.set_from_stock(gtk.STOCK_NO, gtk.ICON_SIZE_BUTTON)
+        return False
      
     @property
     def ids(self):
