@@ -178,7 +178,7 @@ class BarcodeScanner(object):
     def ids(self):
         """Stores dict of all ids"""
         for i in self.entries:
-            self._ids[i] = self._entries.get_text()
+            self._ids[i] = self.entries[i].get_text()
         return self._ids
     
     @ids.setter
