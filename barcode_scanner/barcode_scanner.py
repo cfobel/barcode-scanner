@@ -11,18 +11,15 @@ import gobject
 from version import getVersion
 
 # Setup Logging
-root_logger = logging.getLogger("barcode_scanner")
-root_logger.setLevel(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(level=logging.INFO)
 log_handler = logging.StreamHandler()
 log_formatter = logging.Formatter(
-                    fmt='%(asctime)s [%(name)s](%(levelname)s) %(message)s',
+                    fmt='[%(name)s](%(levelname)s) %(message)s',
                     datefmt='%H:%M:%S'
                 )
 log_handler.setFormatter(log_formatter)
-root_logger.addHandler(log_handler)
-
-logger = logging.getLogger("barcode_scanner.main")
-
+logger.addHandler(log_handler)
 
 class BarcodeScanner(object):
     """ 
