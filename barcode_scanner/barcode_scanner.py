@@ -128,9 +128,9 @@ class BarcodeScanner(object):
         self.scanner.parse_config('enable=0')
         self.scanner.parse_config('qrcode.enable=1')
         self.scanner.parse_config('code128.enable=1')
-        self.scanner.parse_config('code128.ascii=0')
-        self.scanner.parse_config('code128.min=6')
-        self.scanner.parse_config('code128.max=6')
+        self.scanner.parse_config('code128.ascii=1')
+        self.scanner.parse_config('code128.min=3')
+        self.scanner.parse_config('code128.max=8')
         
         self.vc.open(0)
         self.vc.set(3, self.camera_dim[0])
