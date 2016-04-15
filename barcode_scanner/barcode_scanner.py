@@ -1,5 +1,10 @@
+#!/usr/bin/env python
+
+import os
+import sys
 import logging
 import argparse
+import json
 
 import cv2
 from PIL import Image
@@ -49,13 +54,12 @@ class BarcodeScanner(object):
         self.builder.connect_signals(self)
         
         self.window = self.builder.get_object('window1')
-        self.window.connect('destroy',self.quit)
+        self.window.connect('destroy', gtk.main_quit)
         self.video_image = self.builder.get_object('video_image')
         self.status_image = self.builder.get_object('status_image')
         
-        self.zmq_entry = self.builder.get_object('zmq_entry')
-        self.zmq_entry.set_text('tcp://localhost:31000')
         self.camera_entry = self.builder.get_object('camera_entry')
+        self.camera_entry.set_text(str(camera))
         
         entry_list = ['pid_entry', 'did_entry', 'bid_entry']
         self.entries = {}
@@ -69,6 +73,11 @@ class BarcodeScanner(object):
         self.scan_toggle = self.builder.get_object('scan_toggle')
         self.scan_toggle.connect('toggled', self.on_scan_toggle_toggled)
         
+        self.ok_button = self.builder.get_object('ok_button')
+        
+        self.scan_proc_id = None
+        gtk.quit_add(0, self.quit)
+        
         # Set Version Strings
         try:
             ver = getVersion()
@@ -77,6 +86,13 @@ class BarcodeScanner(object):
             logger.warning("Could not fetch version number")
         self.window.set_title("Barcode Scanner %s" % ver)
         
+        if plugin:
+            logger.info("Starting in plugin mode.")
+            
+            self.ok_button.set_visible(True)
+            self.scan_toggle.set_active(True)
+            self.ok_button.connect('clicked', gtk.main_quit)
+        
         if standalone:
             self.window.show()
             return None
@@ -84,9 +100,9 @@ class BarcodeScanner(object):
             return self.window
             
     def quit(self, *args):
-        """Disconnect and save parameters on quit."""
-        self.scan_stop
-        gtk.main_quit()
+        self.scan_stop()
+        if self.plugin:
+            self.dump_data()
     
     def on_scan_toggle_toggled(self, control):
         """Starts and stops barcode scanning"""
@@ -94,9 +110,19 @@ class BarcodeScanner(object):
             self.scan_start()
         else:
             self.scan_stop()
+        
+    def dump_data(self):
+        """Dumps ids to stdout as JSON"""
+        os.dup2(self.oldstdout_fno, 1)
+        print json.dumps(self.ids)
     
     def scan_start(self):
         """Starts scanning"""
+        # Redirect c extensions print statements to null
+        devnull = open(os.devnull, 'w')
+        self.oldstdout_fno = os.dup(sys.stdout.fileno())
+        os.dup2(devnull.fileno(), 1)
+        
         self.vc = cv2.VideoCapture(int(self.camera_entry.get_text()))
         self.scanner = zbar.ImageScanner()
         self.scanner.parse_config('enable=0')
@@ -114,8 +140,12 @@ class BarcodeScanner(object):
     
     def scan_stop(self):
         """Stops ongoing scan."""
-        gobject.source_remove(self.scan_proc_id)
-        self.vc.release()
+        if self.scan_proc_id != None:
+            gobject.source_remove(self.scan_proc_id)
+            self.vc.release()
+            self.scan_proc_id = None
+        
+        os.dup2(self.oldstdout_fno, 1)
     
     def _scan_proc(self):
         output, img = self.scan_once()
