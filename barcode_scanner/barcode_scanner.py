@@ -1,4 +1,5 @@
 import logging
+import argparse
 
 import cv2
 from PIL import Image
@@ -22,15 +23,29 @@ root_logger.addHandler(log_handler)
 
 logger = logging.getLogger("barcode_scanner.main")
 
-camera_width = 1280
-camera_height = 1024
-video_width = camera_width/4
-video_height = camera_height/4
 
 class BarcodeScanner(object):
-    """Takes camera location as int and returns window."""
-    def __init__(self, camera_location=0, standalone=True):
-        self.camera_location = camera_location
+    """ 
+    Args
+    ----
+
+        camera (int) : Camera address.
+        width (int) : camera width in pixels
+        height (int) : camera height in pixels
+        standalone (bool) : If True, starts own gtk window,
+                            otherwise returns window instance to reparent.
+        plugin (bool) : If True, starts plugin interface.
+    """
+    def __init__(self, camera=None, width=None, height=None,
+                 standalone=True, plugin=None):
+                 
+        camera = 0 if camera is None else camera
+        width = 1280 if width is None else width
+        height = 1024 if height is None else height
+        plugin = False if plugin is None else plugin
+            
+        self.camera_dim = (width, height)
+        self.plugin = plugin
         
         self.builder = gtk.Builder()
         self.builder.add_from_file('barcode_window.glade')
@@ -95,8 +110,8 @@ class BarcodeScanner(object):
         self.scanner.parse_config('code128.max=6')
         
         self.vc.open(0)
-        self.vc.set(3, camera_width)
-        self.vc.set(4, camera_height)
+        self.vc.set(3, self.camera_dim[0])
+        self.vc.set(4, self.camera_dim[1])
         
         self.scan_proc_id = gobject.timeout_add(150, self._scan_proc)
     
@@ -113,13 +128,13 @@ class BarcodeScanner(object):
                                               gtk.gdk.COLORSPACE_RGB,
                                               has_alpha=False,
                                               bits_per_sample=8,
-                                              width=camera_width,
-                                              height=camera_height,
-                                              rowstride=camera_width*3)
+                                              width=self.camera_dim[0],
+                                              height=self.camera_dim[1],
+                                              rowstride=self.camera_dim[0]*3)
         
         self.video_image.set_from_pixbuf(
-            pixbuf.scale_simple(dest_width=video_width,
-                                dest_height=video_height,
+            pixbuf.scale_simple(dest_width=self.camera_dim[0]/4,
+                                dest_height=self.camera_dim[1]/4,
                                 interp_type=gtk.gdk.INTERP_BILINEAR
                                 ).flip(True)
         )
@@ -192,5 +207,13 @@ class BarcodeScanner(object):
 
 
 if __name__ == '__main__':
-    MAIN = BarcodeScanner()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--plugin", help="Starts 0MQ plugin interface",
+                        action="store_true")
+    parser.add_argument("-c", "--camera", type=int, help="Camera number")
+    parser.add_argument("--width", type=int, help="Camera width (pixels)")
+    parser.add_argument("--height", type=int, help="Camera height (pixels)")
+    args = parser.parse_args()
+    
+    MAIN = BarcodeScanner(**vars(args))
     gtk.main()
