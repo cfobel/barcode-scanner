@@ -179,14 +179,15 @@ class BarcodeScanner(object):
             
             if symbol == 'CODE128':
                 result['pid_entry'] = data
+                self.ids = result
             elif symbol == 'QRCODE':
                 d_index = data.find('#')
                 b_index = data.find('%')
                 
                 result['did_entry'] = data[d_index+1:b_index]
                 result['bid_entry'] = data[b_index+1:]
+                self.ids = result
         
-        self.ids = result
         return True
       
     def scan_once(self):
