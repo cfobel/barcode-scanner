@@ -1,0 +1,7 @@
+include RELEASE-VERSION
+include version.py
+include setup.py
+include paver-minilib.zip
+recursive-include barcode_scanner *
+recursive-exclude barcode_scanner *.pyc
+recursive-exclude barcode_scanner *~
