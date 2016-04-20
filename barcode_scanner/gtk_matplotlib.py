@@ -2,73 +2,90 @@ from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanva
 from matplotlib.collections import PatchCollection
 from matplotlib.figure import Figure
 from matplotlib.patches import Polygon
+from pygtkhelpers.delegates import SlaveView
 import gtk
 import matplotlib as mpl
 
 
-def get_scanner_window(scanner):
-    window = gtk.Window()
-    vbox = gtk.VBox()
-    window.set_default_size(400, 300)
-    fig = Figure(figsize=(4, 3))
-    axis = fig.add_subplot(111)
-    axis.set_aspect(True)
-    axis.set_axis_off()
-    canvas = FigureCanvas(fig)
-    button_scan = gtk.Button('Scan')
+class ScannerView(SlaveView):
+    def __init__(self, scanner, width=400, height=300):
+        self.scanner = scanner
+        self.callback_ids = {}
+        self.width = width
+        self.height = height
+        super(ScannerView, self).__init__()
 
-    vbox.pack_start(canvas, True, True, 0)
-    for widget_i in (button_scan, ):
-        vbox.pack_start(widget_i, False, False, 0)
+    def on_button_debug__clicked(self, button):
+        import IPython
+        import inspect
 
-    window.add(vbox)
-    window.show_all()
+        # Get parent from stack
+        parent_stack = inspect.stack()[1]
+        IPython.embed()
 
-    status = {}
+    def create_ui(self):
+        self.fig = Figure(figsize=(4, 3), frameon=False)
+        # Remove padding around axes.
+        self.fig.subplots_adjust(bottom=0, top=1, right=1, left=0)
+        self.canvas = FigureCanvas(self.fig)
+        self.canvas.set_size_request(self.width, self.height)
+        self.reset_axis()
+        self.button_scan = gtk.Button('Scan')
+        self.button_debug = gtk.Button('Debug')
 
-    def disable_scan():
-        for callback_id in ['frame_callback_id', 'symbol_callback_id']:
-            if callback_id in status:
-                scanner.disconnect(status[callback_id])
-                del status[callback_id]
-        scanner.disable_scan()
-        button_scan.set_sensitive(True)
+        self.widget.pack_start(self.canvas, True, True, 0)
+        for widget_i in (self.button_scan, self.button_debug):
+            self.widget.pack_start(widget_i, False, False, 0)
 
-    def enable_scan():
-        scanner.reset()
-        scanner.enable_scan()
-        button_scan.set_sensitive(False)
-        status['frame_callback_id'] = scanner.connect('frame-update',
-                                                      on_frame_update)
-        status['symbol_callback_id'] = scanner.connect('symbols-found',
-                                                       on_symbols_found)
+        self.widget.show_all()
+        self.button_scan.connect('clicked', lambda *args: self.enable_scan())
 
-    button_scan.connect('clicked', lambda *args: enable_scan())
+    def reset_axis(self):
+        self.fig.clf()
+        self.axis = self.fig.add_subplot(111)
+        self.axis.set_aspect(True)
+        self.axis.set_axis_off()
 
-    def on_frame_update(scanner, np_img):
-        axis.clear()
-        axis.set_axis_off()
-        axis.imshow(np_img)
-        canvas.draw()
+    def cleanup(self):
+        for callback_id in ['frame', 'symbol']:
+            if callback_id in self.callback_ids:
+                self.scanner.disconnect(self.callback_ids[callback_id])
+                del self.callback_ids[callback_id]
 
-    def on_symbols_found(scanner, np_img, symbols):
+    def disable_scan(self):
+        self.cleanup()
+        self.scanner.disable_scan()
+        self.button_scan.set_sensitive(True)
+
+    def enable_scan(self):
+        self.reset_axis()
+        self.scanner.reset()
+        self.scanner.enable_scan()
+        self.button_scan.set_sensitive(False)
+        self.callback_ids['frame'] = self.scanner.connect('frame-update',
+                                                          self.on_frame_update)
+        self.callback_ids['symbol'] = self.scanner.connect('symbols-found',
+                                                           self.on_symbols_found)
+
+    def __dealloc__(self):
+        self.cleanup()
+
+    def on_frame_update(self, scanner, np_img):
+        self.axis.clear()
+        self.axis.set_axis_off()
+        self.axis.imshow(np_img)
+        self.canvas.draw()
+
+    def on_symbols_found(self, scanner, np_img, symbols):
         patches = []
         if symbols:
             for symbol_record_i in symbols:
                 symbol_i = symbol_record_i['symbol']
                 location_i = Polygon(symbol_i.location)
                 patches.append(location_i)
-            patch_collection = PatchCollection(patches, cmap=mpl.cm.jet, alpha=0.4)
-            on_frame_update(scanner, np_img)
-            axis.add_collection(patch_collection)
-            canvas.draw()
-            disable_scan()
-
-    def on_exit(*args):
-        for callback_id in ['frame_callback_id', 'symbol_callback_id']:
-            if callback_id in status:
-                scanner.disconnect(status[callback_id])
-                del status[callback_id]
-
-    window.connect('destroy', on_exit)
-    return window
+            patch_collection = PatchCollection(patches, cmap=mpl.cm.jet,
+                                               alpha=0.4)
+            self.on_frame_update(scanner, np_img)
+            self.axis.add_collection(patch_collection)
+            self.canvas.draw()
+            self.disable_scan()

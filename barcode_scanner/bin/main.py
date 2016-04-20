@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 import json
 import logging
+import pprint
 import sys
 
 import gtk
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def gui_main(pipeline_command):
-    from ..gtk_matplotlib import get_scanner_window
+    from ..gtk_matplotlib import ScannerView
 
     gtk.gdk.threads_init()
     scanner = BarcodeScanner()
@@ -24,11 +25,13 @@ def gui_main(pipeline_command):
         scanner.stop()
         gtk.main_quit()
 
-    window = get_scanner_window(scanner)
+    window = gtk.Window()
+    scanner_view = ScannerView(scanner)
+    window.add(scanner_view.widget)
     window.connect('destroy', on_exit)
-    gtk.main()
+    window.show_all()
 
-#{\"device_name\":\"USB2.0 HD UVC WebCam\",\"width\":1280,\"height\":720,\"name\":\"video\/x-raw-yuv\",\"fourcc\":\"YUY2\",\"framerate_num\":8,\"framerate_denom\":1,\"framerate\":8.0}
+    gtk.main()
 
 
 def pipeline_command_from_json(json_source):
